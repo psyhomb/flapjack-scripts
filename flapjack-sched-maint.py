@@ -137,20 +137,129 @@ def stale_cache(filename, retention_time):
     return False
 
 
+def convert_to_secs(human_time):
+  """ Convert human time format to seconds (output: int) """
+  try:
+    supported = {
+      's': 1,
+      'm': 60,
+      'h': 60*60,
+      'd': 24*60*60,
+      'w': 7*24*60*60,
+      'M': 30*24*60*60,
+      'Y': 365*24*60*60
+    }
+
+    num = human_time[:-1]
+    suffix = human_time[-1]
+
+    if suffix in supported:
+       secs = int(num) * supported[suffix]
+    else:
+       secs = int(human_time)
+  except:
+    secs = None
+
+  return secs
+
+
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('-H', '--hostname', help='Flapjack API hostname', default='localhost', dest='host', action='store')
-  parser.add_argument('-p', '--port', help='Flapjack API port', type=int, default=3081, dest='port', action='store')
-  parser.add_argument('-c', '--checks', help='List of case insensitive check names (e.g. c1,c2,cX)', default='', dest='checks', action='store')
-  parser.add_argument('-e', '--entities', help='List of case insensitive entity names (e.g. e1,e2,eX)', default='', dest='entities', action='store')
-  parser.add_argument('-t', '--start-time', help='A date & time in ISO 8601 format YYYY-MM-DDThh:mm:ss (e.g. 2016-10-22T17:55:00)', default='', dest='start_time', action='store')
-  parser.add_argument('-d', '--duration', help='A length of time (in seconds) that the created scheduled maintenance periods should last, will be ignored if -D is used', type=int, default=3600, dest='duration', action='store')
-  parser.add_argument('-S', '--summary', help='A summary of the reason for the maintenance period, will be ignored if -D is used', default='Test', dest='summary', action='store')
-  parser.add_argument('-l', '--length', help='URL max path length (RFC 2616, section 3.2.1)', type=int, default=1000, dest='length', action='store')
-  parser.add_argument('-D', '--delete', help='Delete schedule maintenance (requires creation start time specified with -t)', dest='delete', action='store_true')
-  parser.add_argument('--no-cache', help='Don\'t use cached information', dest='no_cache', action='store_true')
-  parser.add_argument('--cache-retention-time', help='Cache will expire after specified time (in seconds) period', type=int, default=604800, dest='cache_retention_time', action='store')
-  parser.add_argument('--cache-file', help='Cache file path', default='/tmp/%s-cache.json' % os.path.splitext(os.path.basename(__file__))[0], dest='cache_file', action='store')
+  parser.add_argument(
+    '-H', '--hostname',
+    help='Flapjack API hostname',
+    default='localhost',
+    dest='host',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-p', '--port',
+    help='Flapjack API port',
+    type=int,
+    default=3081,
+    dest='port',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-c', '--checks',
+    help='List of case insensitive check names (e.g. c1,c2,cX)',
+    default='',
+    dest='checks',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-e', '--entities',
+    help='List of case insensitive entity names (e.g. e1,e2,eX)',
+    default='',
+    dest='entities',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-t', '--start-time',
+    help='A date & time in ISO 8601 format YYYY-MM-DDThh:mm:ss (e.g. 2016-10-22T17:55:00)',
+    default='',
+    dest='start_time',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-d', '--duration',
+    help='A length of time (s = seconds, m = minutes, h = hours, d = days, w = weeks, M = months, Y = years) that the created scheduled maintenance periods should last, will be ignored if -D is used',
+    default='1h',
+    dest='duration',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-S', '--summary',
+    help='A summary of the reason for the maintenance period, will be ignored if -D is used',
+    default='Test',
+    dest='summary',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-l', '--length',
+    help='URL max path length (RFC 2616, section 3.2.1)',
+    type=int,
+    default=1000,
+    dest='length',
+    action='store'
+  )
+
+  parser.add_argument(
+    '-D', '--delete',
+    help='Delete schedule maintenance (requires creation start time specified with -t)',
+    dest='delete',
+    action='store_true'
+  )
+
+  parser.add_argument(
+    '--no-cache',
+    help='Don\'t use cached information',
+    dest='no_cache',
+    action='store_true'
+  )
+
+  parser.add_argument(
+    '--cache-retention-time',
+    help='Cache will expire after specified time (s = seconds, m = minutes, h = hours, d = days, w = weeks, M = months, Y = years) period',
+    default='1w',
+    dest='cache_retention_time',
+    action='store'
+  )
+
+  parser.add_argument(
+    '--cache-file',
+    help='Cache file path',
+    default='/tmp/%s-cache.json' % os.path.splitext(os.path.basename(__file__))[0],
+    dest='cache_file',
+    action='store'
+  )
 
   args = parser.parse_args()
 
@@ -158,15 +267,15 @@ def main():
   checks = args.checks.split(',') if args.checks else []
   entities = args.entities.split(',') if args.entities else []
   start_time = args.start_time
-  duration = args.duration
+  duration = convert_to_secs(args.duration)
   summary = args.summary
   length = args.length
   delete = args.delete
   no_cache = args.no_cache
-  cache_retention_time = args.cache_retention_time
+  cache_retention_time = convert_to_secs(args.cache_retention_time)
   cache_file = args.cache_file
 
-  if (not checks and not entities) or (delete and not start_time):
+  if (not checks and not entities) or (delete and not start_time) or duration is None or cache_retention_time is None:
     parser.print_help()
     sys.exit(2)
 
