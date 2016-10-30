@@ -226,7 +226,7 @@ def main():
     '-l', '--length',
     help='URL max path length (RFC 2616, section 3.2.1)',
     type=int,
-    default=1000,
+    default=900,
     dest='length',
     action='store'
   )
