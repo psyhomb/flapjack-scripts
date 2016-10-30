@@ -256,14 +256,15 @@ def main():
   parser.add_argument(
     '--cache-file',
     help='Cache file path',
-    default='/tmp/%s-cache.json' % os.path.splitext(os.path.basename(__file__))[0],
+    default='',
     dest='cache_file',
     action='store'
   )
 
   args = parser.parse_args()
 
-  flapjack_api = 'http://%s:%d' % (args.host, args.port)
+  host = args.host
+  port = args.port
   checks = args.checks.split(',') if args.checks else []
   entities = args.entities.split(',') if args.entities else []
   start_time = args.start_time
@@ -273,7 +274,9 @@ def main():
   delete = args.delete
   no_cache = args.no_cache
   cache_retention_time = convert_to_secs(args.cache_retention_time)
-  cache_file = args.cache_file
+  cache_file = '/tmp/%s-%s-%d-cache.json' % (os.path.splitext(os.path.basename(__file__))[0], host.replace('.', '-'), port) if not args.cache_file else args.cache_file
+
+  flapjack_api = 'http://%s:%d' % (host, port)
 
   if (not checks and not entities) or (delete and not start_time) or duration is None or cache_retention_time is None:
     parser.print_help()
