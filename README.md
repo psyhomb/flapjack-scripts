@@ -9,7 +9,7 @@ About
 
 `flapjack-sched-maint.py`
 
-  - Used to create/delete schedule maintenance periods
+  - define/undefine schedule maintenance periods
 
 
 Requirements
